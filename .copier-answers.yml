@@ -1,0 +1,17 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: v4.6.5
+_src_path: https://github.com/jupyterlab/extension-template
+advanced: false
+author_email: yvvakimoto@ymail.ne.jp
+author_name: yvvakimoto
+has_ai_rules: false
+has_binder: false
+has_settings: true
+kind: frontend
+labextension_name: jupyterlab-vim-langmap
+project_short_description: Remap vim command-mode keys back to QWERTY positions when
+    the OS emulates Dvorak
+python_name: jupyterlab_vim_langmap
+repository: https://github.com/yvvakimoto/jupyterlab-vim-langmap
+test: false
+

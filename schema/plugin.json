@@ -1,0 +1,45 @@
+{
+  "jupyter.lab.setting-icon-label": "Vim langmap",
+  "title": "Vim langmap (Dvorak → QWERTY)",
+  "description": "Remap command keys back to QWERTY physical positions when the OS emulates another layout such as Dvorak. Text input (vim Insert mode, the Ex and search prompts) is left alone.",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "title": "Enabled",
+      "description": "Master switch. When off, both the vim langmap and the keyboard layout are restored to their defaults.",
+      "type": "boolean",
+      "default": true
+    },
+    "preset": {
+      "title": "Preset",
+      "description": "Which langmap string to use. 'dvorak' is the built-in Dvorak → QWERTY mapping; 'custom' uses the 'langmap' setting below.",
+      "enum": ["dvorak", "custom"],
+      "default": "dvorak"
+    },
+    "langmap": {
+      "title": "Custom langmap",
+      "description": "A vim 'langmap' string, used only when 'preset' is 'custom'. Same format as vim's :set langmap= and VSCodeVim's vim.langmap — comma separated parts, each either a list of from/to character pairs (e.g. `aAbB`) or `fromlist;tolist` (e.g. `abc;ABC`). Escape a literal comma or semicolon with a backslash.",
+      "type": "string",
+      "default": ""
+    },
+    "remapCtrl": {
+      "title": "Remap Ctrl combinations",
+      "description": "Also apply the langmap to Ctrl/Alt/Meta combinations, so that e.g. Ctrl-d stays on the physical QWERTY 'd' key. Turn this off if your OS level remapper already passes Ctrl combinations through unchanged.",
+      "type": "boolean",
+      "default": true
+    },
+    "applyToVim": {
+      "title": "Apply to vim command keys",
+      "description": "Remap keys in vim Normal, Visual and operator-pending modes inside cell editors. Requires jupyterlab-vim.",
+      "type": "boolean",
+      "default": true
+    },
+    "applyToJupyterShortcuts": {
+      "title": "Apply to JupyterLab shortcuts",
+      "description": "Remap JupyterLab's own keybindings — Jupyter Command mode (dd, x, c, v, a, b, z), the command palette and menu mnemonics — by swapping the Lumino keyboard layout. Turn this off if your OS level remapper leaves event.keyCode on the physical key, in which case these shortcuts are already in QWERTY positions.",
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "additionalProperties": false
+}

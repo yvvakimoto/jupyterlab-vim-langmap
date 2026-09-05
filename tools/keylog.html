@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>keylog — やまぶきR キーイベント実測</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 14px/1.6 system-ui, "Segoe UI", sans-serif; margin: 0; padding: 24px; max-width: 1040px; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  p.sub { margin: 0 0 20px; opacity: .75; }
+  .verdict { border: 2px solid currentColor; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+  .verdict h2 { font-size: 15px; margin: 0 0 10px; }
+  .row { display: flex; gap: 10px; align-items: baseline; margin: 4px 0; }
+  .row b { min-width: 300px; font-weight: 600; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 4px; font-weight: 600; font-size: 13px; }
+  .yes  { background: #1b7f37; color: #fff; }
+  .no   { background: #888; color: #fff; }
+  .warn { background: #a8500a; color: #fff; }
+  table { border-collapse: collapse; width: 100%; font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+  th, td { border-bottom: 1px solid rgba(128,128,128,.35); padding: 5px 8px; text-align: left; white-space: nowrap; }
+  th { position: sticky; top: 0; background: Canvas; }
+  .wrap { max-height: 420px; overflow: auto; border: 1px solid rgba(128,128,128,.35); border-radius: 6px; }
+  kbd { border: 1px solid rgba(128,128,128,.6); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; font-family: ui-monospace, monospace; }
+  button { font: inherit; padding: 5px 14px; border-radius: 6px; cursor: pointer; margin-bottom: 12px; }
+  #conclusion { font-size: 13px; line-height: 1.7; }
+  hr { border: 0; border-top: 1px solid rgba(128,128,128,.35); margin: 12px 0; }
+</style>
+</head>
+<body>
+<h1>やまぶきR キーイベント実測</h1>
+<p class="sub">
+  このページにフォーカスしたまま、<b>やまぶきR を ON にした状態で</b>英字キーをいくつか押してください
+  （物理 <kbd>j</kbd> <kbd>k</kbd> <kbd>s</kbd> <kbd>q</kbd> あたり）。
+  そのあと <kbd>Ctrl</kbd> を押しながら同じキーも押してください。判定は自動で更新されます。
+</p>
+
+<div class="verdict">
+  <h2>判定</h2>
+  <div class="row"><b>event.key が Dvorak 文字になっている</b><span id="v-key" class="tag no">未計測</span></div>
+  <div class="row"><b>event.code も Dvorak 位置になっている</b><span id="v-code" class="tag no">未計測</span></div>
+  <div class="row"><b>event.keyCode が Dvorak 文字の VK</b><span id="v-kc" class="tag no">未計測</span></div>
+  <div class="row"><b>Ctrl 併用時もリマップされる</b><span id="v-ctrl" class="tag no">未計測</span></div>
+  <hr>
+  <div id="conclusion">キーを押すと結論を表示します。</div>
+</div>
+
+<button id="clear">ログを消す</button>
+<div class="wrap">
+<table>
+  <thead><tr>
+    <th>#</th><th>modifiers</th><th>event.key</th><th>event.code</th><th>keyCode</th>
+    <th>VK(key)</th><th>code の物理キー</th><th>VK(物理)</th><th>keyCode の出所</th>
+  </tr></thead>
+  <tbody id="log"></tbody>
+</table>
+</div>
+
+<script>
+// US 配列の char -> keyCode(VK)。keyCode は shift を区別しないので shift 側も同じ VK に落とす。
+var VK = {};
+for (var c = 0; c < 26; c++) {
+  VK[String.fromCharCode(97 + c)] = 65 + c;
+  VK[String.fromCharCode(65 + c)] = 65 + c;
+}
+for (var d = 0; d <= 9; d++) VK[String(d)] = 48 + d;
+var punct = {
+  ';': 186, '=': 187, ',': 188, '-': 189, '.': 190, '/': 191, '`': 192,
+  '[': 219, '\\': 220, ']': 221, "'": 222,
+  ':': 186, '+': 187, '<': 188, '_': 189, '>': 190, '?': 191, '~': 192,
+  '{': 219, '|': 220, '}': 221, '"': 222
+};
+for (var p in punct) VK[p] = punct[p];
+
+// event.code -> US 配列で刻印されている文字
+var CODE_PUNCT = {
+  Semicolon: ';', Equal: '=', Comma: ',', Minus: '-', Period: '.', Slash: '/',
+  Backquote: '`', BracketLeft: '[', Backslash: '\\', BracketRight: ']', Quote: "'"
+};
+function charFromCode(code) {
+  if (/^Key[A-Z]$/.test(code)) return code.slice(3).toLowerCase();
+  if (/^Digit[0-9]$/.test(code)) return code.slice(5);
+  return CODE_PUNCT[code] || null;
+}
+
+var stats = { key: [0, 0], code: [0, 0], kc: [0, 0], ctrl: [0, 0] };
+var n = 0;
+var logEl = document.getElementById('log');
+
+function pct(pair) {
+  if (pair[1] === 0) return '未計測';
+  return Math.round(100 * pair[0] / pair[1]) + '% (' + pair[0] + '/' + pair[1] + ')';
+}
+function setTag(id, pair) {
+  var el = document.getElementById(id);
+  el.className = 'tag ' + (pair[1] === 0 ? 'no' : (pair[0] / pair[1] > 0.5 ? 'yes' : 'warn'));
+  el.textContent = pct(pair);
+}
+
+function refresh() {
+  setTag('v-key', stats.key);
+  setTag('v-code', stats.code);
+  setTag('v-kc', stats.kc);
+  setTag('v-ctrl', stats.ctrl);
+
+  var el = document.getElementById('conclusion');
+  if (stats.key[1] === 0) { el.textContent = 'キーを押すと結論を表示します。'; return; }
+
+  var lines = [];
+  if (stats.key[0] / stats.key[1] <= 0.5) {
+    lines.push('<b>やまぶきR がリマップしていないように見えます。</b> ON になっているか確認してください。');
+    el.innerHTML = lines.join('<br>');
+    return;
+  }
+  lines.push('→ event.key は Dvorak 文字。<b>vim 側の langmap は必須</b>（設計どおり）。');
+
+  if (stats.kc[1] > 0) {
+    lines.push(stats.kc[0] / stats.kc[1] > 0.5
+      ? '→ keyCode も Dvorak 文字の VK。やまぶきR は仮想キーコードごと差し替えている。'
+        + ' Lumino も Dvorak 位置になるので <b>applyToJupyterShortcuts = true が必要</b>。'
+      : '→ keyCode は Dvorak 文字の VK と一致しない。Lumino 側は既に QWERTY 位置の可能性が高く、'
+        + ' <b>applyToJupyterShortcuts は既定 OFF</b> でよい。');
+  }
+  if (stats.ctrl[1] > 0) {
+    lines.push(stats.ctrl[0] / stats.ctrl[1] > 0.5
+      ? '→ Ctrl 併用時もリマップされている。<b>remapCtrl = true</b> が正しい既定。'
+      : '→ Ctrl 併用時はリマップが素通しされている。<b>remapCtrl = false</b> を既定にすべき。');
+  } else {
+    lines.push('→ Ctrl 併用がまだ未計測。Ctrl を押しながら英字キーも押してください。');
+  }
+  el.innerHTML = lines.join('<br>');
+}
+
+window.addEventListener('keydown', function (e) {
+  if (e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt' ||
+      e.key === 'Meta' || e.key === 'CapsLock') return;
+  e.preventDefault();
+  n++;
+
+  var physChar = charFromCode(e.code);
+  var vkOfKey = VK[e.key];
+  var vkOfPhys = physChar ? VK[physChar] : undefined;
+  var comparable = physChar !== null && e.key.length === 1;
+  // 押した物理キーの刻印と出てきた文字が違う == リマップされている
+  var remapped = comparable && e.key.toLowerCase() !== physChar;
+
+  if (comparable) {
+    if (e.ctrlKey) {
+      stats.ctrl[1]++;
+      if (remapped) stats.ctrl[0]++;
+    } else {
+      stats.key[1]++;
+      if (remapped) stats.key[0]++;
+      stats.code[1]++;
+      if (!remapped) stats.code[0]++; // key と code が一致 == code も Dvorak 側に寄っている
+      if (vkOfKey !== undefined) {
+        stats.kc[1]++;
+        if (remapped && e.keyCode === vkOfKey) stats.kc[0]++;
+      }
+    }
+  }
+
+  var origin = '—';
+  if (vkOfKey !== undefined && vkOfPhys !== undefined && e.keyCode === vkOfKey && e.keyCode === vkOfPhys) {
+    origin = '両者一致（リマップ無し）';
+  } else if (vkOfKey !== undefined && e.keyCode === vkOfKey) {
+    origin = 'VK(key) — Dvorak 文字';
+  } else if (vkOfPhys !== undefined && e.keyCode === vkOfPhys) {
+    origin = 'VK(物理) — QWERTY 位置';
+  }
+
+  var mods = [];
+  if (e.ctrlKey) mods.push('Ctrl');
+  if (e.altKey) mods.push('Alt');
+  if (e.shiftKey) mods.push('Shift');
+  if (e.metaKey) mods.push('Meta');
+
+  var cells = [n, mods.join('+') || '—', JSON.stringify(e.key), e.code, e.keyCode,
+               vkOfKey === undefined ? '—' : vkOfKey,
+               physChar === null ? '—' : physChar,
+               vkOfPhys === undefined ? '—' : vkOfPhys,
+               origin];
+  var tr = document.createElement('tr');
+  for (var i = 0; i < cells.length; i++) {
+    var td = document.createElement('td');
+    td.textContent = String(cells[i]);
+    tr.appendChild(td);
+  }
+  logEl.insertBefore(tr, logEl.firstChild);
+  while (logEl.children.length > 60) logEl.removeChild(logEl.lastChild);
+  refresh();
+});
+
+document.getElementById('clear').addEventListener('click', function () {
+  logEl.textContent = '';
+  n = 0;
+  stats = { key: [0, 0], code: [0, 0], kc: [0, 0], ctrl: [0, 0] };
+  refresh();
+});
+
+refresh();
+</script>
+</body>
+</html>
