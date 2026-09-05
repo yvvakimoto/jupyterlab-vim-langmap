@@ -10,10 +10,10 @@ Normal / Visual モードのキーまで Dvorak 位置になってしまう。
 
 ## 何が変わるか
 
-| レイヤ | 対象 | 実現方法 |
-| --- | --- | --- |
-| vim | セル編集中の Normal / Visual / operator-pending | `Vim.langmap()`（`@replit/codemirror-vim` のネイティブ機能） |
-| JupyterLab | Jupyter Command モード（`dd` `x` `c` `v` `a` `b` `z`）、コマンドパレット、メニューのニーモニック | `@lumino/keyboard` のキーボードレイアウト差し替え |
+| レイヤ     | 対象                                                                                             | 実現方法                                                     |
+| ---------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ |
+| vim        | セル編集中の Normal / Visual / operator-pending                                                  | `Vim.langmap()`（`@replit/codemirror-vim` のネイティブ機能） |
+| JupyterLab | Jupyter Command モード（`dd` `x` `c` `v` `a` `b` `z`）、コマンドパレット、メニューのニーモニック | `@lumino/keyboard` のキーボードレイアウト差し替え            |
 
 変わらないもの:
 
@@ -36,14 +36,14 @@ jupyterlab-vim が依存として一緒に入る。JupyterLab を再起動（ブ
 
 Settings → Advanced Settings Editor → **Vim langmap**。
 
-| 設定 | 既定 | 説明 |
-| --- | --- | --- |
-| `enabled` | `true` | マスタースイッチ。off で両レイヤとも既定に戻る |
-| `preset` | `"dvorak"` | 内蔵の Dvorak → QWERTY マッピング。`"custom"` で下の `langmap` を使う |
-| `langmap` | `""` | 任意の vim `langmap` 文字列（`preset: "custom"` のときのみ） |
-| `remapCtrl` | `true` | `Ctrl-d` などの併用キーも QWERTY 位置に揃える |
-| `applyToVim` | `true` | vim 側のリマップ |
-| `applyToJupyterShortcuts` | `true` | JupyterLab 側のリマップ |
+| 設定                      | 既定       | 説明                                                                  |
+| ------------------------- | ---------- | --------------------------------------------------------------------- |
+| `enabled`                 | `true`     | マスタースイッチ。off で両レイヤとも既定に戻る                        |
+| `preset`                  | `"dvorak"` | 内蔵の Dvorak → QWERTY マッピング。`"custom"` で下の `langmap` を使う |
+| `langmap`                 | `""`       | 任意の vim `langmap` 文字列（`preset: "custom"` のときのみ）          |
+| `remapCtrl`               | `true`     | `Ctrl-d` などの併用キーも QWERTY 位置に揃える                         |
+| `applyToVim`              | `true`     | vim 側のリマップ                                                      |
+| `applyToJupyterShortcuts` | `true`     | JupyterLab 側のリマップ                                               |
 
 `langmap` の書式は vim の `:set langmap=` と同じ。カンマ区切りで、各パートは
 文字ペアの並び（`aAbB`）か `fromlist;tolist` 形式（`abc;ABC`）。
@@ -62,8 +62,13 @@ Settings → Advanced Settings Editor → **Vim langmap**。
 
 OS レベルのリマッパが `event.keyCode` を物理キーのまま残す実装だと、
 JupyterLab のショートカットは最初から QWERTY 位置にある。その場合はこの設定を
-`false` にする。判断には `tools/keylog.html` をブラウザで開いて実測する
-（押したキーから自動で判定を表示する）。
+`false` にする。
+
+判断には計測ツールを使う。リポジトリの
+[`tools/keylog.html`](https://github.com/yvvakimoto/jupyterlab-vim-langmap/blob/main/tools/keylog.html)
+を保存してブラウザで開き、リマッパを ON にしたまま英字キーと Ctrl 併用を何度か押すと、
+`event.key` / `event.code` / `event.keyCode` の実測値から必要な設定を自動で判定して表示する。
+（このファイルは pip パッケージには含まれない。）
 
 ## 開発
 

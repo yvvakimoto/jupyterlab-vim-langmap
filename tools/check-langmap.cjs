@@ -11,15 +11,21 @@
 const path = require('path');
 
 const outDir = path.resolve(process.argv[2] || '.check-build/src');
-const { DVORAK_LANGMAP, parseLangmap } = require(path.join(outDir, 'langmap.js'));
-const { buildKeycodeTable, EN_US_CODES } = require(path.join(outDir, 'keycodes.js'));
+const { DVORAK_LANGMAP, parseLangmap } = require(
+  path.join(outDir, 'langmap.js')
+);
+const { buildKeycodeTable, EN_US_CODES } = require(
+  path.join(outDir, 'keycodes.js')
+);
 
 let failures = 0;
 function check(label, actual, expected) {
   const a = JSON.stringify(actual);
   const e = JSON.stringify(expected);
   if (a !== e) {
-    console.error(`FAIL  ${label}\n        expected ${e}\n        actual   ${a}`);
+    console.error(
+      `FAIL  ${label}\n        expected ${e}\n        actual   ${a}`
+    );
     failures++;
   }
 }
@@ -29,22 +35,79 @@ const keymap = parseLangmap(DVORAK_LANGMAP);
 
 // The 35 unshifted pairs, written out independently of the source string.
 const LOWER = {
-  "'": 'q', ',': 'w', '.': 'e', p: 'r', y: 't', f: 'y', g: 'u', c: 'i',
-  r: 'o', l: 'p', '/': '[', '=': ']',
-  a: 'a', o: 's', e: 'd', u: 'f', i: 'g', d: 'h', h: 'j', t: 'k', n: 'l',
-  s: ';', '-': "'",
-  ';': 'z', q: 'x', j: 'c', k: 'v', x: 'b', b: 'n', m: 'm', w: ',', v: '.',
-  z: '/', '[': '-', ']': '='
+  "'": 'q',
+  ',': 'w',
+  '.': 'e',
+  p: 'r',
+  y: 't',
+  f: 'y',
+  g: 'u',
+  c: 'i',
+  r: 'o',
+  l: 'p',
+  '/': '[',
+  '=': ']',
+  a: 'a',
+  o: 's',
+  e: 'd',
+  u: 'f',
+  i: 'g',
+  d: 'h',
+  h: 'j',
+  t: 'k',
+  n: 'l',
+  s: ';',
+  '-': "'",
+  ';': 'z',
+  q: 'x',
+  j: 'c',
+  k: 'v',
+  x: 'b',
+  b: 'n',
+  m: 'm',
+  w: ',',
+  v: '.',
+  z: '/',
+  '[': '-',
+  ']': '='
 };
 const UPPER = {
-  '"': 'Q', '<': 'W', '>': 'E', P: 'R', Y: 'T', F: 'Y', G: 'U', C: 'I',
-  R: 'O', L: 'P', '?': '{', '+': '}',
-  A: 'A', O: 'S', E: 'D', U: 'F', I: 'G', D: 'H', H: 'J', T: 'K', N: 'L',
-  S: ':', _: '"',
-  ':': 'Z', Q: 'X', J: 'C', K: 'V', X: 'B', B: 'N', M: 'M', W: '<', V: '>',
+  '"': 'Q',
+  '<': 'W',
+  '>': 'E',
+  P: 'R',
+  Y: 'T',
+  F: 'Y',
+  G: 'U',
+  C: 'I',
+  R: 'O',
+  L: 'P',
+  '?': '{',
+  '+': '}',
+  A: 'A',
+  O: 'S',
+  E: 'D',
+  U: 'F',
+  I: 'G',
+  D: 'H',
+  H: 'J',
+  T: 'K',
+  N: 'L',
+  S: ':',
+  _: '"',
+  ':': 'Z',
+  Q: 'X',
+  J: 'C',
+  K: 'V',
+  X: 'B',
+  B: 'N',
+  M: 'M',
+  W: '<',
+  V: '>',
   Z: '?',
   // Absent from the VSCodeVim string; see the comment on DVORAK_LANGMAP.
-  '{': '_', '}': '+'
+  '{': '_',
+  '}': '+'
 };
 
 check('langmap entry count', Object.keys(keymap).length, 35 + 35);
@@ -55,7 +118,11 @@ for (const [from, to] of Object.entries({ ...LOWER, ...UPPER })) {
 // Escapes and the alternate `from;to` form must both work.
 check('escaped comma pair', parseLangmap('\\,w'), { ',': 'w' });
 check('escaped semicolon pair', parseLangmap('s\\;'), { s: ';' });
-check('semicolon list form', parseLangmap('abc;xyz'), { a: 'x', b: 'y', c: 'z' });
+check('semicolon list form', parseLangmap('abc;xyz'), {
+  a: 'x',
+  b: 'y',
+  c: 'z'
+});
 check('odd length part is skipped', parseLangmap('abc'), {});
 check('empty string', parseLangmap(''), {});
 
@@ -63,8 +130,16 @@ check('empty string', parseLangmap(''), {});
 const codes = buildKeycodeTable(keymap);
 
 const VK = {
-  "'": [222], ',': [188], '.': [190], '/': [191], '=': [61, 187],
-  ';': [59, 186], '-': [173, 189], '[': [219], ']': [221], '`': [192],
+  "'": [222],
+  ',': [188],
+  '.': [190],
+  '/': [191],
+  '=': [61, 187],
+  ';': [59, 186],
+  '-': [173, 189],
+  '[': [219],
+  ']': [221],
+  '`': [192],
   '\\': [220]
 };
 for (let i = 0; i < 26; i++) {
@@ -86,7 +161,11 @@ check('keypad - untouched', codes[109], '-');
 check('backslash untouched', codes[220], '\\');
 check('backtick untouched', codes[192], '`');
 check('Enter untouched', codes[13], 'Enter');
-check('table size unchanged', Object.keys(codes).length, Object.keys(EN_US_CODES).length);
+check(
+  'table size unchanged',
+  Object.keys(codes).length,
+  Object.keys(EN_US_CODES).length
+);
 
 // The remap must be a permutation: the 35 physical keys produce exactly the
 // 35 key names they produced before, just rearranged. Anything else means a

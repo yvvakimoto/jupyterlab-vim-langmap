@@ -18,8 +18,7 @@
  * motions — so those motions fire from two different physical keys while `_`
  * and `+` are unreachable at their QWERTY positions.
  */
-export const DVORAK_LANGMAP =
-  `'q,\\,w,.e,pr,yt,fy,gu,ci,ro,lp,/[,=],aa,os,ed,uf,ig,dh,hj,tk,nl,s\\;,-',\\;z,qx,jc,kv,xb,bn,mm,w\\,,v.,z/,[-,]=,"Q,<W,>E,PR,YT,FY,GU,CI,RO,LP,?{,+},AA,OS,ED,UF,IG,DH,HJ,TK,NL,S:,_",:Z,QX,JC,KV,XB,BN,MM,W<,V>,Z?,{_,}+`;
+export const DVORAK_LANGMAP = `'q,\\,w,.e,pr,yt,fy,gu,ci,ro,lp,/[,=],aa,os,ed,uf,ig,dh,hj,tk,nl,s\\;,-',\\;z,qx,jc,kv,xb,bn,mm,w\\,,v.,z/,[-,]=,"Q,<W,>E,PR,YT,FY,GU,CI,RO,LP,?{,+},AA,OS,ED,UF,IG,DH,HJ,TK,NL,S:,_",:Z,QX,JC,KV,XB,BN,MM,W<,V>,Z?,{_,}+`;
 
 /**
  * Split a list of characters, honouring backslash escapes (`\,` and `\;`).

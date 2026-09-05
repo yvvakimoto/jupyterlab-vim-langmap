@@ -25,6 +25,19 @@ export default defineConfig([
   },
   jupyterPlugin.configs.recommended,
   {
+    // Development helper scripts under tools/ are plain CommonJS run by node.
+    files: ['**/*.cjs'],
+    languageOptions: {
+      globals: {
+        ...globals.node
+      },
+      sourceType: 'commonjs'
+    },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off'
+    }
+  },
+  {
     files: ['**/*.ts', '**/*.tsx'],
     languageOptions: {
       globals: {

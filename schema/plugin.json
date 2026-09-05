@@ -12,8 +12,18 @@
     },
     "preset": {
       "title": "Preset",
-      "description": "Which langmap string to use. 'dvorak' is the built-in Dvorak → QWERTY mapping; 'custom' uses the 'langmap' setting below.",
-      "enum": ["dvorak", "custom"],
+      "description": "Which langmap string to use.",
+      "type": "string",
+      "oneOf": [
+        {
+          "const": "dvorak",
+          "title": "Dvorak → QWERTY (built in)"
+        },
+        {
+          "const": "custom",
+          "title": "Custom — use the langmap setting below"
+        }
+      ],
       "default": "dvorak"
     },
     "langmap": {
