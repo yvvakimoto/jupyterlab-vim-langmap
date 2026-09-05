@@ -1,101 +1,92 @@
 # jupyterlab-vim-langmap
 
-Vim のコマンドキーだけを QWERTY 物理配列位置に戻す JupyterLab 拡張。
+Put vim's command keys back on their QWERTY physical positions, without touching what you type.
 
-やまぶきR などで OS レベルに Dvorak 配列をエミュレートしていると、
-[jupyterlab-vim](https://github.com/jupyterlab-contrib/jupyterlab-vim) の
-Normal / Visual モードのキーまで Dvorak 位置になってしまう。
-この拡張は VSCodeVim の `vim.langmap` と同じ文字列を 1 本受け取り、
-コマンドキーだけを QWERTY 位置に戻す。文字入力は Dvorak のまま。
+If you emulate Dvorak (or any other layout) at the OS level — Yamabuki R, PowerToys, `setxkbmap`, a programmable keyboard — then [jupyterlab-vim](https://github.com/jupyterlab-contrib/jupyterlab-vim) sees the remapped characters, so `hjkl` lands wherever Dvorak puts those letters rather than under your fingers. Vim solves this with `langmap` and VSCodeVim exposes it as `vim.langmap`, but jupyterlab-vim has no equivalent setting.
 
-## 何が変わるか
+This extension takes one langmap string and applies it to both layers of JupyterLab that read the keyboard.
 
-| レイヤ     | 対象                                                                                             | 実現方法                                                     |
-| ---------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ |
-| vim        | セル編集中の Normal / Visual / operator-pending                                                  | `Vim.langmap()`（`@replit/codemirror-vim` のネイティブ機能） |
-| JupyterLab | Jupyter Command モード（`dd` `x` `c` `v` `a` `b` `z`）、コマンドパレット、メニューのニーモニック | `@lumino/keyboard` のキーボードレイアウト差し替え            |
+## What it changes
 
-変わらないもの:
+| Layer      | Keys                                                                                           | Mechanism                                                         |
+| ---------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| vim        | Normal, Visual and operator-pending, inside cell and file editors                              | `Vim.langmap()`, built into `@replit/codemirror-vim`              |
+| JupyterLab | Jupyter Command mode (`dd`, `x`, `c`, `v`, `a`, `b`, `z`), the command palette, menu mnemonics | swaps the `@lumino/keyboard` layout, which resolves every binding |
 
-- **vim Insert モードの文字入力** — langmap はコマンドマッチングに使われるだけで、
-  文字の挿入はブラウザ側が元のキーイベントから行う
-- **Ex コマンド (`:w`) と検索 (`/pattern`) のプロンプト** — vim 側がプロンプト入力を
-  langmap の対象外にしている
-- **`f{char}` / `r{char}` / `m{char}` / `"{reg}` の引数** — `expectLiteralNext` により
-  直後の 1 キーは変換されないので、`fx` は本当に `x` を探す
+## What it leaves alone
 
-## インストール
+- **Text you type in Insert mode.** The langmap only feeds command matching; the character itself is still inserted by the browser from the original key event.
+- **The Ex and search prompts.** `:w` and `/pattern` are typed in your actual layout, matching vim's own behaviour.
+- **Character arguments** of `f`, `t`, `r`, `m`, registers and marks. The vim layer suppresses translation for the key right after those commands, so `fx` searches for a real `x`.
+
+Counts, operators and operator-pending motions all work, because the langmap is applied when the key event is turned into a key name — before any command matching happens.
+
+## Install
 
 ```bash
 pip install jupyterlab-vim-langmap
 ```
 
-jupyterlab-vim が依存として一緒に入る。JupyterLab を再起動（ブラウザのリロードでも可）。
+jupyterlab-vim comes along as a dependency. Reload the browser tab afterwards.
 
-## 設定
+## Settings
 
-Settings → Advanced Settings Editor → **Vim langmap**。
+Settings → Advanced Settings Editor → **Vim langmap**.
 
-| 設定                      | 既定       | 説明                                                                  |
-| ------------------------- | ---------- | --------------------------------------------------------------------- |
-| `enabled`                 | `true`     | マスタースイッチ。off で両レイヤとも既定に戻る                        |
-| `preset`                  | `"dvorak"` | 内蔵の Dvorak → QWERTY マッピング。`"custom"` で下の `langmap` を使う |
-| `langmap`                 | `""`       | 任意の vim `langmap` 文字列（`preset: "custom"` のときのみ）          |
-| `remapCtrl`               | `true`     | `Ctrl-d` などの併用キーも QWERTY 位置に揃える                         |
-| `applyToVim`              | `true`     | vim 側のリマップ                                                      |
-| `applyToJupyterShortcuts` | `true`     | JupyterLab 側のリマップ                                               |
+| Setting                   | Default    | Meaning                                                                       |
+| ------------------------- | ---------- | ----------------------------------------------------------------------------- |
+| `enabled`                 | `true`     | Master switch. Turning it off restores both layers to their defaults.         |
+| `preset`                  | `"dvorak"` | The built-in Dvorak → QWERTY mapping, or `"custom"` to use `langmap` below.   |
+| `langmap`                 | `""`       | Any vim `langmap` string. Only read when `preset` is `"custom"`.              |
+| `remapCtrl`               | `true`     | Also remap Ctrl/Alt/Meta combinations, so `Ctrl-d` stays on the physical `d`. |
+| `applyToVim`              | `true`     | The vim half.                                                                 |
+| `applyToJupyterShortcuts` | `true`     | The JupyterLab half.                                                          |
 
-`langmap` の書式は vim の `:set langmap=` と同じ。カンマ区切りで、各パートは
-文字ペアの並び（`aAbB`）か `fromlist;tolist` 形式（`abc;ABC`）。
-リテラルのカンマ・セミコロンはバックスラッシュでエスケープする。
+The `langmap` format is the one from vim's `:set langmap=` and VSCodeVim's `vim.langmap`: comma-separated parts, each either a run of from/to character pairs (`aAbB`) or `fromlist;tolist` (`abc;ABC`). Escape a literal comma or semicolon with a backslash.
 
-### 内蔵プリセットと VSCodeVim の `vim.langmap` の差分
+### The built-in preset vs. VSCodeVim's `vim.langmap`
 
-内蔵の `dvorak` プリセットは VSCodeVim でよく使われる Dvorak 用 `vim.langmap`
-文字列に **`{_` と `}+` の 2 ペアを足したもの**。元の文字列にはこの 2 つが無く、
-物理 `-` / `=` キーを Shift したときに `{` `}` がそのまま vim に渡ってしまい、
-段落移動が 2 つの物理キーから発火する一方で `_` と `+` が QWERTY 位置から
-打てなくなる。VSCode 側の設定と完全に一致させたい場合は `preset: "custom"` にして
-元の文字列を `langmap` に貼る。
+The `dvorak` preset is the Dvorak string that circulates for VSCodeVim **plus the two pairs it omits**, `{_` and `}+`.
 
-### `applyToJupyterShortcuts` を切るべきケース
+Without them the physical `-` and `=` keys still emit `{` and `}` when shifted, which vim reads as the paragraph motions. So those motions fire from two different physical keys while `_` and `+` are unreachable where QWERTY puts them. If you would rather match your VSCode configuration exactly, set `preset` to `"custom"` and paste the original string into `langmap`.
 
-OS レベルのリマッパが `event.keyCode` を物理キーのまま残す実装だと、
-JupyterLab のショートカットは最初から QWERTY 位置にある。その場合はこの設定を
-`false` にする。
+### When to turn `applyToJupyterShortcuts` off
 
-判断には計測ツールを使う。リポジトリの
-[`tools/keylog.html`](https://github.com/yvvakimoto/jupyterlab-vim-langmap/blob/main/tools/keylog.html)
-を保存してブラウザで開き、リマッパを ON にしたまま英字キーと Ctrl 併用を何度か押すと、
-`event.key` / `event.code` / `event.keyCode` の実測値から必要な設定を自動で判定して表示する。
-（このファイルは pip パッケージには含まれない。）
+JupyterLab's own keybindings are resolved from `event.keyCode`. Some OS-level remappers rewrite the virtual key code, others leave it on the physical key — and in the second case JupyterLab's shortcuts are already in QWERTY positions, so remapping them again would move them off.
 
-## 開発
+To find out which kind you have, download [`tools/keylog.html`](https://github.com/yvvakimoto/jupyterlab-vim-langmap/blob/main/tools/keylog.html) and open it in a browser. With your remapper on, press a few letter keys and then the same keys with Ctrl held: it reports `event.key`, `event.code` and `event.keyCode` for each, and tells you which settings you need. (The file ships in the repository, not in the wheel.)
+
+## Development
 
 ```bash
 pip install -e ".[dev]"
 jupyter labextension develop --overwrite .
-jlpm watch          # 別ターミナルで jupyter lab
+jlpm watch
 ```
 
-純ロジック（langmap パーサとキーコード表）の検査:
+Then run `jupyter lab` in another terminal.
+
+To check the pure logic — the langmap parser, and that the keycode remap is a permutation of the main key block so no shortcut becomes unreachable:
 
 ```bash
 npx tsc --module commonjs --target ES2018 --rootDir . --outDir .check-build src/langmap.ts src/keycodes.ts
 node tools/check-langmap.cjs .check-build/src
 ```
 
-### 設計メモ
+### Design notes
 
-`@replit/codemirror-vim` の `langmap` はモジュールグローバルなので、
-jupyterlab-vim が使っているのと**同じモジュールインスタンス**に触る必要がある。
-`package.json` の `jupyterlab.sharedPackages` で
-`"@replit/codemirror-vim": { "bundled": false }` と宣言し、自前バンドルを作らずに
-jupyterlab-vim が module federation の共有スコープへ登録したコピーを使う。
+The vim `langmap` lives in module-level state inside `@replit/codemirror-vim`, so this extension has to touch the **same module instance** jupyterlab-vim uses. `package.json` declares
 
-langmap はキーマップ（`Vim.map` / `Vim.mapclear`）とは独立した層にあるため、
-jupyterlab-vim が起動時に行う `mapclear` に消されない。プラグインの起動順は問わない。
+```json
+"sharedPackages": { "@replit/codemirror-vim": { "bundled": false } }
+```
 
-## ライセンス
+which tells webpack to consume the copy jupyterlab-vim contributes to the module federation share scope rather than bundling one. The consequence is that a future jupyterlab-vim which moves outside `^6.2.1` would leave the vim half inactive — it logs a warning to the console when that happens.
+
+The langmap sits in a different layer from key mappings (`Vim.map` / `Vim.mapclear`), so jupyterlab-vim's `mapclear` at startup does not wipe it and plugin activation order does not matter.
+
+On the JupyterLab side, `@lumino/keyboard` resolves every keybinding through a single `keyCode → key name` table, so one permuted table covers Command mode, the palette and menu mnemonics at once — no per-shortcut overrides. Only the unshifted half of a langmap is used there, because `event.keyCode` carries no shift state.
+
+## License
 
 BSD-3-Clause
