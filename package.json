@@ -1,6 +1,6 @@
 {
     "name": "jupyterlab-vim-langmap",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Remap vim command-mode keys back to QWERTY positions when the OS emulates Dvorak",
     "keywords": [
         "jupyter",

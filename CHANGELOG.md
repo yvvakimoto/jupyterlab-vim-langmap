@@ -2,7 +2,7 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
-## Unreleased
+## 0.1.1
 
 - Fix `Ctrl+S`, `Ctrl+/`, `Ctrl+Shift+C` and other Ctrl/Alt/Meta shortcuts
   when the OS remapper passes modified keys through: they were remapped a
