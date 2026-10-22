@@ -2,6 +2,14 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## Unreleased
+
+- Fix `Ctrl+S`, `Ctrl+/`, `Ctrl+Shift+C` and other Ctrl/Alt/Meta shortcuts
+  when the OS remapper passes modified keys through: they were remapped a
+  second time, so e.g. `Ctrl+S` fell through to the browser's "Save page".
+  `remapCtrl` now governs the JupyterLab shortcut layout as well as vim.
+- `remapCtrl` now defaults to `false`, matching Yamabuki R's default.
+
 ## 0.1.0
 
 First release.

@@ -1,11 +1,12 @@
 /**
- * Sanity check for the pure logic in src/langmap.ts and src/keycodes.ts.
+ * Sanity check for the pure logic in src/langmap.ts, src/keycodes.ts and
+ * src/layout.ts.
  *
  * The sources are ESM/TypeScript, so compile them to CommonJS first and point
  * this script at the output directory:
  *
  *   npx tsc --module commonjs --target ES2018 --rootDir . \
- *       --outDir .check-build src/langmap.ts src/keycodes.ts
+ *       --outDir .check-build src/langmap.ts src/keycodes.ts src/layout.ts
  *   node tools/check-langmap.cjs .check-build/src
  */
 const path = require('path');
@@ -17,6 +18,7 @@ const { DVORAK_LANGMAP, parseLangmap } = require(
 const { buildKeycodeTable, EN_US_CODES } = require(
   path.join(outDir, 'keycodes.js')
 );
+const { ModifierAwareLayout } = require(path.join(outDir, 'layout.js'));
 
 let failures = 0;
 function check(label, actual, expected) {
@@ -177,6 +179,63 @@ for (const list of Object.values(VK)) {
 const before = mainCodes.map(c => EN_US_CODES[c]).sort();
 const after = mainCodes.map(c => codes[c]).sort();
 check('main block is a permutation', after, before);
+
+// ----------------------------------------------------------------- layout ---
+// Stand-ins for KeycodeLayout, which needs nothing beyond the table lookup.
+const tableLayout = table => ({
+  keys: () => [],
+  isValidKey: () => true,
+  isModifierKey: () => false,
+  keyForKeydownEvent: event => table[event.keyCode] || ''
+});
+const layoutFor = remapModified =>
+  new ModifierAwareLayout(
+    'test',
+    tableLayout(codes),
+    tableLayout(EN_US_CODES),
+    remapModified
+  );
+const kd = (keyCode, mods = {}) => ({
+  keyCode,
+  ctrlKey: false,
+  altKey: false,
+  metaKey: false,
+  shiftKey: false,
+  ...mods
+});
+
+const passThrough = layoutFor(false);
+check('unmodified o -> S', passThrough.keyForKeydownEvent(kd(79)), 'S');
+check(
+  'shift alone still remaps',
+  passThrough.keyForKeydownEvent(kd(79, { shiftKey: true })),
+  'S'
+);
+check(
+  'Ctrl+s stays S',
+  passThrough.keyForKeydownEvent(kd(83, { ctrlKey: true })),
+  'S'
+);
+check(
+  'Ctrl+/ stays /',
+  passThrough.keyForKeydownEvent(kd(191, { ctrlKey: true })),
+  '/'
+);
+check(
+  'Alt+x stays X',
+  passThrough.keyForKeydownEvent(kd(88, { altKey: true })),
+  'X'
+);
+check(
+  'remapModified remaps Ctrl+o to S',
+  layoutFor(true).keyForKeydownEvent(kd(79, { ctrlKey: true })),
+  'S'
+);
+check(
+  'remapModified remaps Ctrl+s to ;',
+  layoutFor(true).keyForKeydownEvent(kd(83, { ctrlKey: true })),
+  ';'
+);
 
 // ------------------------------------------------------------------ result ---
 if (failures) {

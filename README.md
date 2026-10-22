@@ -33,14 +33,14 @@ jupyterlab-vim comes along as a dependency. Reload the browser tab afterwards.
 
 Settings → Advanced Settings Editor → **Vim langmap**.
 
-| Setting                   | Default    | Meaning                                                                       |
-| ------------------------- | ---------- | ----------------------------------------------------------------------------- |
-| `enabled`                 | `true`     | Master switch. Turning it off restores both layers to their defaults.         |
-| `preset`                  | `"dvorak"` | The built-in Dvorak → QWERTY mapping, or `"custom"` to use `langmap` below.   |
-| `langmap`                 | `""`       | Any vim `langmap` string. Only read when `preset` is `"custom"`.              |
-| `remapCtrl`               | `true`     | Also remap Ctrl/Alt/Meta combinations, so `Ctrl-d` stays on the physical `d`. |
-| `applyToVim`              | `true`     | The vim half.                                                                 |
-| `applyToJupyterShortcuts` | `true`     | The JupyterLab half.                                                          |
+| Setting                   | Default    | Meaning                                                                     |
+| ------------------------- | ---------- | --------------------------------------------------------------------------- |
+| `enabled`                 | `true`     | Master switch. Turning it off restores both layers to their defaults.       |
+| `preset`                  | `"dvorak"` | The built-in Dvorak → QWERTY mapping, or `"custom"` to use `langmap` below. |
+| `langmap`                 | `""`       | Any vim `langmap` string. Only read when `preset` is `"custom"`.            |
+| `remapCtrl`               | `false`    | Also remap Ctrl/Alt/Meta combinations, in vim and in JupyterLab shortcuts.  |
+| `applyToVim`              | `true`     | The vim half.                                                               |
+| `applyToJupyterShortcuts` | `true`     | The JupyterLab half.                                                        |
 
 The `langmap` format is the one from vim's `:set langmap=` and VSCodeVim's `vim.langmap`: comma-separated parts, each either a run of from/to character pairs (`aAbB`) or `fromlist;tolist` (`abc;ABC`). Escape a literal comma or semicolon with a backslash.
 
@@ -49,6 +49,10 @@ The `langmap` format is the one from vim's `:set langmap=` and VSCodeVim's `vim.
 The `dvorak` preset is the Dvorak string that circulates for VSCodeVim **plus the two pairs it omits**, `{_` and `}+`.
 
 Without them the physical `-` and `=` keys still emit `{` and `}` when shifted, which vim reads as the paragraph motions. So those motions fire from two different physical keys while `_` and `+` are unreachable where QWERTY puts them. If you would rather match your VSCode configuration exactly, set `preset` to `"custom"` and paste the original string into `langmap`.
+
+### When to turn `remapCtrl` on
+
+Many OS-level remappers — Yamabuki R by default — stop translating while Ctrl, Alt or Win is held, so `Ctrl+S` already arrives from the physical `s` key. Remapping it again would turn it into `Ctrl+;`, which nothing handles, and the browser's own "Save page" fires instead (likewise `Ctrl+/` stops commenting and `Ctrl+Shift+C` opens DevTools). That is why `remapCtrl` is off by default. Turn it on only if your remapper translates Ctrl combinations as well; `tools/keylog.html` (below) tells you which kind you have.
 
 ### When to turn `applyToJupyterShortcuts` off
 
@@ -69,7 +73,7 @@ Then run `jupyter lab` in another terminal.
 To check the pure logic — the langmap parser, and that the keycode remap is a permutation of the main key block so no shortcut becomes unreachable:
 
 ```bash
-npx tsc --module commonjs --target ES2018 --rootDir . --outDir .check-build src/langmap.ts src/keycodes.ts
+npx tsc --module commonjs --target ES2018 --rootDir . --outDir .check-build src/langmap.ts src/keycodes.ts src/layout.ts
 node tools/check-langmap.cjs .check-build/src
 ```
 
@@ -85,7 +89,7 @@ which tells webpack to consume the copy jupyterlab-vim contributes to the module
 
 The langmap sits in a different layer from key mappings (`Vim.map` / `Vim.mapclear`), so jupyterlab-vim's `mapclear` at startup does not wipe it and plugin activation order does not matter.
 
-On the JupyterLab side, `@lumino/keyboard` resolves every keybinding through a single `keyCode → key name` table, so one permuted table covers Command mode, the palette and menu mnemonics at once — no per-shortcut overrides. Only the unshifted half of a langmap is used there, because `event.keyCode` carries no shift state.
+On the JupyterLab side, `@lumino/keyboard` resolves every keybinding through a single `keyCode → key name` table, so one permuted table covers Command mode, the palette and menu mnemonics at once — no per-shortcut overrides. Only the unshifted half of a langmap is used there, because `event.keyCode` carries no shift state. The installed layout consults that table only for keys pressed without Ctrl/Alt/Meta unless `remapCtrl` is on; modified keys resolve through JupyterLab's original layout.
 
 ## License
 

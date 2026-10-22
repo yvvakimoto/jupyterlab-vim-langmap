@@ -34,9 +34,9 @@
     },
     "remapCtrl": {
       "title": "Remap Ctrl combinations",
-      "description": "Also apply the langmap to Ctrl/Alt/Meta combinations, so that e.g. Ctrl-d stays on the physical QWERTY 'd' key. Turn this off if your OS level remapper already passes Ctrl combinations through unchanged.",
+      "description": "Also apply the langmap to Ctrl/Alt/Meta combinations, both in vim and in JupyterLab shortcuts. Leave this off if your OS level remapper passes Ctrl combinations through unchanged (Yamabuki R does by default) — otherwise Ctrl+S, Ctrl+/ and friends get remapped twice and stop working. Turn it on only if the remapper also translates Ctrl combinations.",
       "type": "boolean",
-      "default": true
+      "default": false
     },
     "applyToVim": {
       "title": "Apply to vim command keys",

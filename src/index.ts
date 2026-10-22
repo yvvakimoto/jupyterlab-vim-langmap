@@ -13,7 +13,8 @@ import {
 } from '@lumino/keyboard';
 
 import { DVORAK_LANGMAP, parseLangmap } from './langmap';
-import { buildKeycodeTable, MODIFIER_KEYS } from './keycodes';
+import { buildKeycodeTable, EN_US_CODES, MODIFIER_KEYS } from './keycodes';
+import { ModifierAwareLayout } from './layout';
 
 const PLUGIN_ID = 'jupyterlab-vim-langmap:plugin';
 const LAYOUT_NAME = 'jupyterlab-vim-langmap';
@@ -77,7 +78,7 @@ function readConfig(settings: ISettingRegistry.ISettings): IConfig {
     enabled: get('enabled', true),
     preset: get('preset', 'dvorak'),
     langmap: get('langmap', ''),
-    remapCtrl: get('remapCtrl', true),
+    remapCtrl: get('remapCtrl', false),
     applyToVim: get('applyToVim', true),
     applyToJupyterShortcuts: get('applyToJupyterShortcuts', true)
   };
@@ -115,9 +116,21 @@ async function apply(config: IConfig): Promise<void> {
   }
 
   // (B) Jupyter Command mode and every other Lumino keybinding.
+  //
+  // `remapCtrl` governs this half too: with it off, Ctrl/Alt/Meta combinations
+  // resolve through the untouched layout, so `Accel S` and `Accel /` keep
+  // working when the OS remapper passes modified keys through.
   if (langmapString && config.applyToJupyterShortcuts) {
     const codes = buildKeycodeTable(parseLangmap(langmapString));
-    setKeyboardLayout(new KeycodeLayout(LAYOUT_NAME, codes, MODIFIER_KEYS));
+    setKeyboardLayout(
+      new ModifierAwareLayout(
+        LAYOUT_NAME,
+        new KeycodeLayout(LAYOUT_NAME, codes, MODIFIER_KEYS),
+        originalLayout ??
+          new KeycodeLayout('en-us', EN_US_CODES, MODIFIER_KEYS),
+        config.remapCtrl
+      )
+    );
   } else if (originalLayout) {
     setKeyboardLayout(originalLayout);
   }
